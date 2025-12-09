@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vehicle Expense Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 12px;
+      background: #f2f2f2;
+    }
+    h1 { text-align: center; }
+    .card {
+      background: white;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    label { display: block; margin-top: 6px; font-size: 13px; }
+    input, select, textarea {
+      width: 100%; padding: 8px; margin-top: 3px; font-size: 14px;
+      border-radius: 4px; border: 1px solid #ccc;
+    }
+    button {
+      padding: 8px 12px; border: none; border-radius: 4px;
+      font-weight: bold; cursor: pointer; margin-top: 10px;
+    }
+    .btn-primary { background: #1976d2; color: white; }
+    .btn-danger { background: #d32f2f; color: white; }
+    .btn-small { font-size: 11px; padding: 4px 6px; }
+    table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; }
+    th, td { border-bottom: 1px solid #eee; padding: 6px 4px; text-align: left; vertical-align: top; }
+    .summary-line { font-size: 13px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<h1>Vehicle Expense Tracker</h1>
+
+<!-- Vehicle Section -->
+<div class="card">
+  <h2>Vehicles</h2>
+  <select id="vehicle-select" onchange="refreshUI()"></select>
+
+  <details style="margin-top:10px;">
+    <summary style="font-size:13px; cursor:pointer;">+ Add new vehicle</summary>
+    <label>Vehicle name</label><input id="vname" type="text" placeholder="e.g., KTM 390 / Honda City" />
+    <label>Registration number (optional)</label><input id="vreg" type="text" />
+    <label>Type</label>
+    <select id="vtype">
+      <option>2W</option><option>4W</option><option>Other</option>
+    </select>
+    <button class="btn-primary" onclick="addVehicle()">Add Vehicle</button>
+  </details>
+</div>
+
+<!-- Summary -->
+<div class="card">
+  <h2>Summary</h2>
+  <div id="summary"></div>
+</div>
+
+<!-- Add Expense -->
+<div class="card">
+  <h2>Add Expense</h2>
+  <div id="veh-title" style="font-size:13px; margin-bottom:6px;"></div>
+
+  <label>Date</label><input type="date" id="edate" />
+
+  <label>Odometer (km)</label><input type="number" id="eodo" />
+
+  <label>Category</label>
+  <select id="ecat">
+    <option>Fuel</option><option>Service</option>
+    <option>Maintenance</option><option>Insurance</option><option>Other</option>
+  </select>
+
+  <label>Amount (₹)</label><input type="number" id="eamount" step="0.01" />
+
+  <label>Litres (fuel only)</label><input type="number" id="elitre" step="0.01" />
+
+  <label>Notes (optional)</label><textarea id="enotes"></textarea>
+
+  <button class="btn-primary" onclick="addExpense()">Add Expense</button>
+</div>
+
+<!-- Expense Table -->
+<div class="card">
+  <h2>Expenses</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th><th>Odo</th><th>Cat</th><th>₹</th><th>L</th><th>Notes</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="etable"></tbody>
+  </table>
+</div>
+
+<script>
+let vehicles = JSON.parse(localStorage.getItem("VE_VEHICLES") || "[]");
+let expenses = JSON.parse(localStorage.getItem("VE_EXPENSES") || "[]");
+let selectedVehicle = localStorage.getItem("VE_SELECTED") || "";
+
+function save() {
+  localStorage.setItem("VE_VEHICLES", JSON.stringify(vehicles));
+  localStorage.setItem("VE_EXPENSES", JSON.stringify(expenses));
+}
+
+function addVehicle() {
+  const name = vname.value.trim();
+  if (!name) return alert("Enter vehicle name");
+  vehicles.push({ id: Date.now(), name, reg: vreg.value.trim(), type: vtype.value });
+  save();
+  vname.value = vreg.value = "";
+  refreshUI();
+}
+
+function addExpense() {
+  if (!selectedVehicle) return alert("Select a vehicle first");
+  const e = {
+    id: Date.now(),
+    vid: selectedVehicle,
+    date: edate.value,
+    odo: Number(eodo.value),
+    cat: ecat.value,
+    amt: Number(eamount.value),
+    lit: elitre.value ? Number(elitre.value) : null,
+    note: enotes.value.trim()
+  };
+  if (!e.date || !e.odo || !e.amt) return alert("Please fill mandatory fields");
+  expenses.push(e);
+  save();
+  edate.value = eodo.value = eamount.value = elitre.value = enotes.value = "";
+  refreshUI();
+}
+
+function deleteExpense(id) {
+  if (!confirm("Delete entry?")) return;
+  expenses = expenses.filter(e => e.id !== id);
+  save();
+  refreshUI();
+}
+
+function refreshUI() {
+  // Vehicle list dropdown
+  vehicle-select.innerHTML = "";
+  vehicles.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v.id;
+    o.textContent = v.name + (v.reg ? " ("+ v.reg +")" : "");
+    vehicle-select.appendChild(o);
+  });
+
+  if (vehicles.length === 0) {
+    summary.innerHTML = "Add a vehicle first.";
+    etable.innerHTML = "";
+    veh-title.innerHTML = "";
+    return;
+  }
+
+  // Maintain selection
+  if (!selectedVehicle || !vehicles.some(v => v.id == selectedVehicle)) {
+    selectedVehicle = vehicles[0].id;
+  }
+  vehicle-select.value = selectedVehicle;
+  localStorage.setItem("VE_SELECTED", selectedVehicle);
+
+  const vObj = vehicles.find(v => v.id == selectedVehicle);
+  veh-title.innerHTML = `Adding for: <b>${vObj.name}</b> (${vObj.type})`;
+
+  // Expense list
+  const list = expenses.filter(e => e.vid == selectedVehicle);
+  etable.innerHTML = list.map(e => `
+    <tr>
+      <td>${e.date}</td><td>${e.odo}</td><td>${e.cat}</td><td>${e.amt}</td>
+      <td>${e.lit ?? ""}</td><td>${e.note ?? ""}</td>
+      <td><button class="btn-danger btn-small" onclick="deleteExpense(${e.id})">X</button></td>
+    </tr>
+  `).join("");
+
+  // Summary
+  let total = 0, fuelAmt = 0, kmSum = 0, litreSum = 0;
+  list.forEach(e => {
+    total += e.amt;
+    if (e.cat === "Fuel" && e.lit) {
+      fuelAmt += e.amt;
+      litreSum += e.lit;
+      kmSum = Math.max(kmSum, e.odo);
+    }
+  });
+
+  let mileage = (kmSum > 0 && litreSum > 0) ? (kmSum / litreSum).toFixed(1) + " km/l" : "—";
+
+  summary.innerHTML = `
+    <div class='summary-line'><b>Total spent:</b> ₹${total}</div>
+    <div class='summary-line'><b>Fuel spent:</b> ₹${fuelAmt}</div>
+    <div class='summary-line'><b>Estimated mileage:</b> ${mileage}</div>
+  `;
+}
+
+refreshUI();
+</script>
+
+</body>
+</html>
