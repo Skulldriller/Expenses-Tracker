@@ -1,210 +1,1097 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vehicle Expense Tracker</title>
+
   <style>
     * { box-sizing: border-box; }
+
+    :root {
+      --teal: #00838f;
+      --teal-light: #4fb3bf;
+      --bg: #f4f4f4;
+      --card-bg: #ffffff;
+      --text-main: #222;
+      --text-sub: #666;
+      --accent-orange: #f9a825;
+      --danger: #d32f2f;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    .app {
+      max-width: 480px;
       margin: 0 auto;
-      padding: 12px;
-      background: #f2f2f2;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--bg);
     }
-    h1 { text-align: center; }
-    .card {
-      background: white;
-      padding: 14px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+    /* Top app bar */
+    .app-bar {
+      background: var(--teal);
+      color: #fff;
+      padding: 12px 12px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    label { display: block; margin-top: 6px; font-size: 13px; }
-    input, select, textarea {
-      width: 100%; padding: 8px; margin-top: 3px; font-size: 14px;
-      border-radius: 4px; border: 1px solid #ccc;
+
+    .app-bar-title {
+      font-size: 20px;
+      font-weight: 600;
     }
-    button {
-      padding: 8px 12px; border: none; border-radius: 4px;
-      font-weight: bold; cursor: pointer; margin-top: 10px;
+
+    .app-bar-actions {
+      display: flex;
+      gap: 8px;
     }
-    .btn-primary { background: #1976d2; color: white; }
-    .btn-danger { background: #d32f2f; color: white; }
-    .btn-small { font-size: 11px; padding: 4px 6px; }
-    table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; }
-    th, td { border-bottom: 1px solid #eee; padding: 6px 4px; text-align: left; vertical-align: top; }
-    .summary-line { font-size: 13px; margin-top: 4px; }
+
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.16);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Content area */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px 74px; /* leave space for bottom nav */
+    }
+
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    /* Vehicle selector row (below app bar) */
+    .vehicle-row {
+      background: var(--card-bg);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .vehicle-row label {
+      font-size: 13px;
+      color: #eee;
+    }
+
+    .vehicle-select {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: none;
+      font-size: 14px;
+    }
+
+    /* Timeline / history list */
+    .history-wrapper {
+      display: flex;
+      margin-top: 8px;
+    }
+
+    .timeline {
+      width: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 6px;
+    }
+
+    .timeline-line {
+      width: 3px;
+      flex: 1;
+      background: #b0bec5;
+      border-radius: 4px;
+    }
+
+    .history-list {
+      flex: 1;
+      padding-left: 6px;
+    }
+
+    .month-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin: 10px 0 4px;
+    }
+
+    .history-item {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .history-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .history-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .history-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .history-right {
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .history-amount {
+      font-weight: 600;
+    }
+
+    .history-date {
+      color: var(--text-sub);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eceff1;
+      color: #555;
+    }
+
+    /* Small circular icons on timeline */
+    .timeline-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 11px;
+      color: #fff;
+      box-shadow: 0 0 0 2px #f1f3f4;
+    }
+
+    /* Reports */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e0e0e0;
+      background: #fafafa;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #555;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: var(--teal);
+      border-bottom-color: var(--teal);
+      font-weight: 600;
+    }
+
+    .report-section {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      font-size: 13px;
+    }
+
+    .report-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px 8px;
+      font-size: 12px;
+    }
+
+    .report-label {
+      color: var(--text-sub);
+      font-size: 11px;
+    }
+
+    .report-value {
+      font-weight: 600;
+    }
+
+    /* More screen / settings list */
+    .list {
+      margin-top: 8px;
+      background: var(--card-bg);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid #eee;
+    }
+    .list-item:last-child { border-bottom: none; }
+
+    .list-icon {
+      width: 24px;
+      text-align: center;
+      margin-right: 10px;
+      font-size: 16px;
+      color: #777;
+    }
+
+    .list-title {
+      flex: 1;
+    }
+
+    .list-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .danger-text {
+      color: var(--danger);
+    }
+
+    /* FAB and menu */
+    .fab {
+      position: absolute;
+      bottom: 58px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: none;
+      background: var(--teal);
+      color: #fff;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      cursor: pointer;
+      z-index: 20;
+    }
+
+    .fab-menu-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 19;
+    }
+    .fab-menu-backdrop.open {
+      display: flex;
+    }
+
+    .fab-menu {
+      background: #fff;
+      border-radius: 16px;
+      padding: 10px 0;
+      width: 260px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .fab-menu-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 14px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .fab-menu-item:hover {
+      background: #f5f5f5;
+    }
+
+    .fab-menu-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .fab-menu-icon.fuel { background: #ff9800; }
+    .fab-menu-icon.exp  { background: #ff5722; }
+    .fab-menu-icon.svc  { background: #795548; }
+
+    /* Bottom navigation */
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 54px;
+      background: #ffffff;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      color: #777;
+      padding-top: 2px;
+      cursor: pointer;
+    }
+
+    .nav-item span {
+      display: block;
+      font-size: 11px;
+      margin-top: 1px;
+    }
+
+    .nav-item.active {
+      color: var(--teal);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      font-size: 18px;
+    }
+
+    /* Simple form dialog for adding expense */
+    .dialog-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    .dialog-backdrop.open {
+      display: flex;
+    }
+
+    .dialog {
+      background: #fff;
+      width: 100%;
+      max-width: 480px;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      padding: 12px 14px 16px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .form-row label {
+      display: block;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .form-row input,
+    .form-row select,
+    .form-row textarea {
+      width: 100%;
+      padding: 7px 8px;
+      margin-top: 3px;
+      border-radius: 6px;
+      border: 1px solid #cfd8dc;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .form-row textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .dialog-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      padding: 7px 12px;
+      font-size: 13px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--teal); color: #fff; }
+    .btn-secondary { background: #eceff1; color: #333; }
+
+    /* Small helpers */
+    .muted { color: var(--text-sub); font-size: 12px; }
+
+    @media (min-width: 520px) {
+      .app {
+        border-left: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+      }
+    }
   </style>
 </head>
 <body>
 
-<h1>Vehicle Expense Tracker</h1>
+<div class="app">
+  <!-- App bar -->
+  <header class="app-bar">
+    <div class="app-bar-title" id="appBarTitle">History</div>
+    <div class="app-bar-actions">
+      <button class="icon-btn" title="Export (not implemented)">⇩</button>
+      <button class="icon-btn" title="Filter (not implemented)">⧉</button>
+    </div>
+  </header>
 
-<!-- Vehicle Section -->
-<div class="card">
-  <h2>Vehicles</h2>
-  <select id="vehicle-select" onchange="refreshUI()"></select>
+  <!-- Vehicle selector (inside bar area, but simple) -->
+  <div class="vehicle-row" style="background:#007684;color:#fff;">
+    <label for="vehicleSelect">Vehicle</label>
+    <select id="vehicleSelect" class="vehicle-select"></select>
+  </div>
 
-  <details style="margin-top:10px;">
-    <summary style="font-size:13px; cursor:pointer;">+ Add new vehicle</summary>
-    <label>Vehicle name</label><input id="vname" type="text" placeholder="e.g., KTM 390 / Honda City" />
-    <label>Registration number (optional)</label><input id="vreg" type="text" />
-    <label>Type</label>
-    <select id="vtype">
-      <option>2W</option><option>4W</option><option>Other</option>
-    </select>
-    <button class="btn-primary" onclick="addVehicle()">Add Vehicle</button>
-  </details>
-</div>
+  <!-- Main content area -->
+  <div class="content">
 
-<!-- Summary -->
-<div class="card">
-  <h2>Summary</h2>
-  <div id="summary"></div>
-</div>
+    <!-- HISTORY SCREEN -->
+    <section id="screen-history" class="screen active">
+      <div class="history-wrapper">
+        <div class="timeline">
+          <div class="timeline-dot">⛽</div>
+          <div class="timeline-line"></div>
+        </div>
+        <div class="history-list" id="historyList">
+          <!-- filled by JS -->
+        </div>
+      </div>
+      <p class="muted" id="historyEmptyMsg" style="display:none;margin-top:10px;">
+        No expenses yet. Tap the <b>+</b> button to add your first refueling or expense.
+      </p>
+    </section>
 
-<!-- Add Expense -->
-<div class="card">
-  <h2>Add Expense</h2>
-  <div id="veh-title" style="font-size:13px; margin-bottom:6px;"></div>
+    <!-- REPORTS SCREEN -->
+    <section id="screen-reports" class="screen">
+      <div class="tabs">
+        <div class="tab active" data-report-tab="general">GENERAL</div>
+        <div class="tab" data-report-tab="fuel">REFUELING</div>
+        <div class="tab" data-report-tab="expense">EXPENSE</div>
+        <div class="tab" data-report-tab="service">SERVICE</div>
+      </div>
 
-  <label>Date</label><input type="date" id="edate" />
+      <div id="reportsContainer">
+        <!-- populated by JS -->
+      </div>
+    </section>
 
-  <label>Odometer (km)</label><input type="number" id="eodo" />
+    <!-- MORE / SETTINGS SCREEN -->
+    <section id="screen-more" class="screen">
+      <div class="list">
+        <div class="list-item">
+          <div class="list-icon">🚗</div>
+          <div class="list-title">
+            Vehicles
+            <div class="list-sub">Add or edit your vehicles (coming soon)</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-icon">⚙️</div>
+          <div class="list-title">
+            Settings
+            <div class="list-sub">Currency and defaults (basic in this version)</div>
+          </div>
+        </div>
+        <div class="list-item" id="btnClearAll">
+          <div class="list-icon">🗑️</div>
+          <div class="list-title danger-text">
+            Clear all data
+            <div class="list-sub">Delete vehicles & expenses from this device</div>
+          </div>
+        </div>
+      </div>
 
-  <label>Category</label>
-  <select id="ecat">
-    <option>Fuel</option><option>Service</option>
-    <option>Maintenance</option><option>Insurance</option><option>Other</option>
-  </select>
+      <p class="muted" style="margin-top:10px;">
+        Data is stored locally on this device only (no cloud sync).
+      </p>
+    </section>
 
-  <label>Amount (₹)</label><input type="number" id="eamount" step="0.01" />
+  </div>
 
-  <label>Litres (fuel only)</label><input type="number" id="elitre" step="0.01" />
+  <!-- Floating Action Button -->
+  <button class="fab" id="fabBtn">+</button>
 
-  <label>Notes (optional)</label><textarea id="enotes"></textarea>
+  <!-- FAB Menu -->
+  <div class="fab-menu-backdrop" id="fabMenuBackdrop">
+    <div class="fab-menu">
+      <div class="fab-menu-item" data-add-type="Fuel">
+        <div class="fab-menu-icon fuel">⛽</div>
+        <div>Refueling</div>
+      </div>
+      <div class="fab-menu-item" data-add-type="Maintenance">
+        <div class="fab-menu-icon svc">🛠</div>
+        <div>Service / Maintenance</div>
+      </div>
+      <div class="fab-menu-item" data-add-type="Expense">
+        <div class="fab-menu-icon exp">₹</div>
+        <div>Other Expense</div>
+      </div>
+    </div>
+  </div>
 
-  <button class="btn-primary" onclick="addExpense()">Add Expense</button>
-</div>
+  <!-- Add Expense Dialog -->
+  <div class="dialog-backdrop" id="addDialogBackdrop">
+    <div class="dialog">
+      <div class="dialog-title" id="addDialogTitle">Add Expense</div>
+      <div class="muted" id="addDialogVehicleLine"></div>
 
-<!-- Expense Table -->
-<div class="card">
-  <h2>Expenses</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th><th>Odo</th><th>Cat</th><th>₹</th><th>L</th><th>Notes</th><th></th>
-      </tr>
-    </thead>
-    <tbody id="etable"></tbody>
-  </table>
+      <div class="form-row">
+        <label for="edate">Date</label>
+        <input type="date" id="edate">
+      </div>
+
+      <div class="form-row">
+        <label for="eodo">Odometer (km)</label>
+        <input type="number" id="eodo">
+      </div>
+
+      <div class="form-row">
+        <label for="ecat">Category</label>
+        <select id="ecat">
+          <option>Fuel</option>
+          <option>Service</option>
+          <option>Maintenance</option>
+          <option>Expense</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="eamount">Amount (₹)</label>
+        <input type="number" id="eamount" step="0.01">
+      </div>
+
+      <div class="form-row">
+        <label for="elitre">Litres (only for fuel)</label>
+        <input type="number" id="elitre" step="0.01">
+      </div>
+
+      <div class="form-row">
+        <label for="enotes">Notes</label>
+        <textarea id="enotes" placeholder="e.g. Shell, card payment, etc."></textarea>
+      </div>
+
+      <div class="dialog-buttons">
+        <button class="btn btn-secondary" id="btnCancelAdd">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveAdd">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom navigation -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-screen="history">
+      <div class="nav-icon">≡</div>
+      <span>History</span>
+    </div>
+    <div class="nav-item" data-screen="reports">
+      <div class="nav-icon">📈</div>
+      <span>Reports</span>
+    </div>
+    <div style="width:54px;"></div> <!-- gap for FAB -->
+    <div class="nav-item" data-screen="more">
+      <div class="nav-icon">⋯</div>
+      <span>More</span>
+    </div>
+  </nav>
+
 </div>
 
 <script>
-let vehicles = JSON.parse(localStorage.getItem("VE_VEHICLES") || "[]");
-let expenses = JSON.parse(localStorage.getItem("VE_EXPENSES") || "[]");
-let selectedVehicle = localStorage.getItem("VE_SELECTED") || "";
+/* --------- Storage keys and state ---------- */
+const LS_VEHICLES = "VE_VEHICLES";
+const LS_EXPENSES = "VE_EXPENSES";
+const LS_SELECTED = "VE_SELECTED";
 
-function save() {
-  localStorage.setItem("VE_VEHICLES", JSON.stringify(vehicles));
-  localStorage.setItem("VE_EXPENSES", JSON.stringify(expenses));
+let vehicles = JSON.parse(localStorage.getItem(LS_VEHICLES) || "[]");
+let expenses = JSON.parse(localStorage.getItem(LS_EXPENSES) || "[]");
+let selectedVehicle = localStorage.getItem(LS_SELECTED) || "";
+
+/* ---------- Helpers ---------- */
+function saveState() {
+  localStorage.setItem(LS_VEHICLES, JSON.stringify(vehicles));
+  localStorage.setItem(LS_EXPENSES, JSON.stringify(expenses));
+  localStorage.setItem(LS_SELECTED, selectedVehicle);
 }
 
-function addVehicle() {
-  const name = vname.value.trim();
-  if (!name) return alert("Enter vehicle name");
-  vehicles.push({ id: Date.now(), name, reg: vreg.value.trim(), type: vtype.value });
-  save();
-  vname.value = vreg.value = "";
-  refreshUI();
+function formatDateShort(str) {
+  if (!str) return "";
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  const day = d.getDate().toString().padStart(2,"0");
+  const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  return day + " " + monthNames[d.getMonth()];
 }
 
-function addExpense() {
-  if (!selectedVehicle) return alert("Select a vehicle first");
-  const e = {
-    id: Date.now(),
-    vid: selectedVehicle,
-    date: edate.value,
-    odo: Number(eodo.value),
-    cat: ecat.value,
-    amt: Number(eamount.value),
-    lit: elitre.value ? Number(elitre.value) : null,
-    note: enotes.value.trim()
-  };
-  if (!e.date || !e.odo || !e.amt) return alert("Please fill mandatory fields");
-  expenses.push(e);
-  save();
-  edate.value = eodo.value = eamount.value = elitre.value = enotes.value = "";
-  refreshUI();
+function monthKey(str) {
+  if (!str) return "Unknown";
+  const d = new Date(str);
+  if (isNaN(d)) return "Unknown";
+  const monthNames = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  return monthNames[d.getMonth()] + " " + d.getFullYear();
 }
 
-function deleteExpense(id) {
-  if (!confirm("Delete entry?")) return;
-  expenses = expenses.filter(e => e.id !== id);
-  save();
-  refreshUI();
+/* ---------- Initial dummy vehicle if none ---------- */
+if (vehicles.length === 0) {
+  const v = { id: Date.now(), name: "My Vehicle", reg: "", type: "2W" };
+  vehicles.push(v);
+  selectedVehicle = String(v.id);
+  saveState();
 }
 
-function refreshUI() {
-  // Vehicle list dropdown
-  vehicle-select.innerHTML = "";
+/* ---------- UI: vehicle selector ---------- */
+const vehicleSelect = document.getElementById("vehicleSelect");
+function refreshVehicleSelect() {
+  vehicleSelect.innerHTML = "";
   vehicles.forEach(v => {
-    const o = document.createElement("option");
-    o.value = v.id;
-    o.textContent = v.name + (v.reg ? " ("+ v.reg +")" : "");
-    vehicle-select.appendChild(o);
+    const opt = document.createElement("option");
+    opt.value = v.id;
+    opt.textContent = v.name + (v.reg ? " ("+v.reg+")" : "");
+    vehicleSelect.appendChild(opt);
   });
 
-  if (vehicles.length === 0) {
-    summary.innerHTML = "Add a vehicle first.";
-    etable.innerHTML = "";
-    veh-title.innerHTML = "";
+  if (!selectedVehicle || !vehicles.some(v => String(v.id) === String(selectedVehicle))) {
+    selectedVehicle = String(vehicles[0].id);
+  }
+  vehicleSelect.value = selectedVehicle;
+}
+
+vehicleSelect.addEventListener("change", () => {
+  selectedVehicle = vehicleSelect.value;
+  saveState();
+  refreshHistory();
+  refreshReports();
+});
+
+/* ---------- HISTORY rendering ---------- */
+function refreshHistory() {
+  const historyList = document.getElementById("historyList");
+  const emptyMsg = document.getElementById("historyEmptyMsg");
+
+  const list = expenses
+    .filter(e => String(e.vid) === String(selectedVehicle))
+    .sort((a,b) => (a.date || "").localeCompare(b.date || ""));
+
+  if (list.length === 0) {
+    historyList.innerHTML = "";
+    emptyMsg.style.display = "block";
     return;
   }
+  emptyMsg.style.display = "none";
 
-  // Maintain selection
-  if (!selectedVehicle || !vehicles.some(v => v.id == selectedVehicle)) {
-    selectedVehicle = vehicles[0].id;
-  }
-  vehicle-select.value = selectedVehicle;
-  localStorage.setItem("VE_SELECTED", selectedVehicle);
-
-  const vObj = vehicles.find(v => v.id == selectedVehicle);
-  veh-title.innerHTML = `Adding for: <b>${vObj.name}</b> (${vObj.type})`;
-
-  // Expense list
-  const list = expenses.filter(e => e.vid == selectedVehicle);
-  etable.innerHTML = list.map(e => `
-    <tr>
-      <td>${e.date}</td><td>${e.odo}</td><td>${e.cat}</td><td>${e.amt}</td>
-      <td>${e.lit ?? ""}</td><td>${e.note ?? ""}</td>
-      <td><button class="btn-danger btn-small" onclick="deleteExpense(${e.id})">X</button></td>
-    </tr>
-  `).join("");
-
-  // Summary
-  let total = 0, fuelAmt = 0, kmSum = 0, litreSum = 0;
+  // Group by month
+  const groups = {};
   list.forEach(e => {
-    total += e.amt;
-    if (e.cat === "Fuel" && e.lit) {
-      fuelAmt += e.amt;
-      litreSum += e.lit;
-      kmSum = Math.max(kmSum, e.odo);
+    const key = monthKey(e.date);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  // Build HTML
+  let html = "";
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(mKey => {
+    html += `<div class="month-label">${mKey}</div>`;
+    groups[mKey].forEach(e => {
+      const vCat = e.cat || "Expense";
+      const amt  = (e.amt || 0).toFixed(2);
+      html += `
+        <div class="history-item">
+          <div class="history-left">
+            <div class="history-title">${vCat}</div>
+            <div class="history-sub">
+              <span>Odo: ${e.odo || "-" } km</span>
+              <span class="pill">${e.lit ? (e.lit + " L") : "no litres"}</span>
+            </div>
+          </div>
+          <div class="history-right">
+            <div class="history-amount">₹${amt}</div>
+            <div class="history-date">${formatDateShort(e.date)}</div>
+          </div>
+        </div>
+      `;
+    });
+  });
+
+  historyList.innerHTML = html;
+}
+
+/* ---------- REPORTS rendering ---------- */
+const reportTabs = document.querySelectorAll(".tab");
+const reportsContainer = document.getElementById("reportsContainer");
+
+reportTabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    reportTabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    refreshReports();
+  });
+});
+
+function currentReportTab() {
+  const t = document.querySelector(".tab.active");
+  return t ? t.dataset.reportTab : "general";
+}
+
+function refreshReports() {
+  const list = expenses.filter(e => String(e.vid) === String(selectedVehicle));
+  const sym = "₹";
+
+  let totalAmt = 0;
+  let minDate = null;
+  let maxOdo = 0;
+
+  let fuelAmt = 0, fuelLit = 0;
+  let expAmt  = 0;
+  let svcAmt  = 0;
+
+  list.forEach(e => {
+    const amt = e.amt || 0;
+    totalAmt += amt;
+    if (e.date) {
+      const d = new Date(e.date);
+      if (!minDate || d < minDate) minDate = d;
+    }
+    if (e.odo && e.odo > maxOdo) maxOdo = e.odo;
+
+    const cat = (e.cat || "").toLowerCase();
+    if (cat === "fuel") {
+      fuelAmt += amt;
+      if (e.lit) fuelLit += e.lit;
+    } else if (cat === "service" || cat === "maintenance") {
+      svcAmt += amt;
+    } else {
+      expAmt += amt;
     }
   });
 
-  let mileage = (kmSum > 0 && litreSum > 0) ? (kmSum / litreSum).toFixed(1) + " km/l" : "—";
+  let days = 0;
+  if (minDate) {
+    const now = new Date();
+    days = Math.max(1, Math.round((now - minDate) / 86400000));
+  }
 
-  summary.innerHTML = `
-    <div class='summary-line'><b>Total spent:</b> ₹${total}</div>
-    <div class='summary-line'><b>Fuel spent:</b> ₹${fuelAmt}</div>
-    <div class='summary-line'><b>Estimated mileage:</b> ${mileage}</div>
-  `;
+  const costPerDay = days ? totalAmt / days : 0;
+  const costPerKm  = maxOdo ? totalAmt / maxOdo : 0;
+  const totalKm    = maxOdo;
+  const dailyKm    = days ? totalKm / days : 0;
+  const fuelEff = (fuelLit && totalKm) ? (totalKm / fuelLit) : 0;
+
+  const tab = currentReportTab();
+  let html = "";
+
+  if (tab === "general") {
+    html += `
+      <div class="report-section">
+        <div class="report-title">Cost</div>
+        <div class="report-grid">
+          <div>
+            <div class="report-label">Total</div>
+            <div class="report-value">${sym}${totalAmt.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="report-label">By day</div>
+            <div class="report-value">${sym}${costPerDay.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="report-label">By km</div>
+            <div class="report-value">${sym}${costPerKm.toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="report-section">
+        <div class="report-title">Distance</div>
+        <div class="report-grid">
+          <div>
+            <div class="report-label">Total</div>
+            <div class="report-value">${totalKm.toFixed(0)} km</div>
+          </div>
+          <div>
+            <div class="report-label">Daily average</div>
+            <div class="report-value">${dailyKm.toFixed(1)} km</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="report-section">
+        <div class="report-title">Fuel (rough)</div>
+        <div class="report-grid">
+          <div>
+            <div class="report-label">Total fuel spend</div>
+            <div class="report-value">${sym}${fuelAmt.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="report-label">Total litres</div>
+            <div class="report-value">${fuelLit.toFixed(2)} L</div>
+          </div>
+          <div>
+            <div class="report-label">Est. efficiency</div>
+            <div class="report-value">${fuelEff ? fuelEff.toFixed(1) + " km/L" : "—"}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (tab === "fuel") {
+    html += `
+      <div class="report-section">
+        <div class="report-title">Fuel cost</div>
+        <div class="report-grid">
+          <div>
+            <div class="report-label">Total</div>
+            <div class="report-value">${sym}${fuelAmt.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="report-label">Litres</div>
+            <div class="report-value">${fuelLit.toFixed(2)} L</div>
+          </div>
+          <div>
+            <div class="report-label">Avg price/L</div>
+            <div class="report-value">${fuelLit ? sym + (fuelAmt / fuelLit).toFixed(2) : "—"}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (tab === "expense") {
+    html += `
+      <div class="report-section">
+        <div class="report-title">Other expenses</div>
+        <div class="report-grid">
+          <div>
+            <div class="report-label">Total</div>
+            <div class="report-value">${sym}${expAmt.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="report-label">Share of total</div>
+            <div class="report-value">${totalAmt ? ((expAmt/totalAmt)*100).toFixed(1) + "%" : "—"}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (tab === "service") {
+    html += `
+      <div class="report-section">
+        <div class="report-title">Service & maintenance</div>
+        <div class="report-grid">
+          <div>
+            <div class="report-label">Total</div>
+            <div class="report-value">${sym}${svcAmt.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="report-label">Share of total</div>
+            <div class="report-value">${totalAmt ? ((svcAmt/totalAmt)*100).toFixed(1) + "%" : "—"}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  reportsContainer.innerHTML = html;
 }
 
-refreshUI();
+/* ---------- Add expense dialog ---------- */
+const fabBtn = document.getElementById("fabBtn");
+const fabMenuBackdrop = document.getElementById("fabMenuBackdrop");
+const addDialogBackdrop = document.getElementById("addDialogBackdrop");
+
+const addDialogTitle = document.getElementById("addDialogTitle");
+const addDialogVehicleLine = document.getElementById("addDialogVehicleLine");
+
+const eDate   = document.getElementById("edate");
+const eOdo    = document.getElementById("eodo");
+const eCat    = document.getElementById("ecat");
+const eAmt    = document.getElementById("eamount");
+const eLit    = document.getElementById("elitre");
+const eNotes  = document.getElementById("enotes");
+
+fabBtn.addEventListener("click", () => {
+  fabMenuBackdrop.classList.add("open");
+});
+
+fabMenuBackdrop.addEventListener("click", (e) => {
+  if (e.target === fabMenuBackdrop) {
+    fabMenuBackdrop.classList.remove("open");
+  }
+});
+
+document.querySelectorAll(".fab-menu-item").forEach(item => {
+  item.addEventListener("click", () => {
+    const type = item.dataset.addType || "Expense";
+    openAddDialog(type);
+    fabMenuBackdrop.classList.remove("open");
+  });
+});
+
+document.getElementById("btnCancelAdd").addEventListener("click", () => {
+  addDialogBackdrop.classList.remove("open");
+});
+
+document.getElementById("btnSaveAdd").addEventListener("click", () => {
+  saveAddExpense();
+});
+
+function openAddDialog(type) {
+  const v = vehicles.find(v => String(v.id) === String(selectedVehicle));
+  addDialogTitle.textContent = "Add " + type;
+  addDialogVehicleLine.textContent = v ? ("For " + v.name) : "";
+  // default category
+  if (type === "Fuel") eCat.value = "Fuel";
+  else if (type === "Maintenance") eCat.value = "Maintenance";
+  else if (type === "Expense") eCat.value = "Expense";
+
+  const today = new Date().toISOString().slice(0,10);
+  eDate.value = today;
+  eOdo.value = "";
+  eAmt.value = "";
+  eLit.value = "";
+  eNotes.value = "";
+  addDialogBackdrop.classList.add("open");
+}
+
+function saveAddExpense() {
+  if (!selectedVehicle) {
+    alert("Please select a vehicle first.");
+    return;
+  }
+  const entry = {
+    id: Date.now(),
+    vid: selectedVehicle,
+    date: eDate.value,
+    odo: Number(eOdo.value),
+    cat: eCat.value,
+    amt: Number(eAmt.value),
+    lit: eLit.value ? Number(eLit.value) : null,
+    note: eNotes.value.trim()
+  };
+
+  if (!entry.date || !entry.odo || !entry.amt) {
+    alert("Please fill date, odometer and amount");
+    return;
+  }
+
+  expenses.push(entry);
+  saveState();
+  addDialogBackdrop.classList.remove("open");
+  refreshHistory();
+  refreshReports();
+}
+
+/* ---------- Bottom nav / screens ---------- */
+const appBarTitle = document.getElementById("appBarTitle");
+const navItems = document.querySelectorAll(".nav-item");
+const screens = {
+  history: document.getElementById("screen-history"),
+  reports: document.getElementById("screen-reports"),
+  more: document.getElementById("screen-more")
+};
+
+navItems.forEach(item => {
+  item.addEventListener("click", () => {
+    const screen = item.dataset.screen;
+    if (!screen) return;
+
+    navItems.forEach(n => n.classList.remove("active"));
+    item.classList.add("active");
+
+    Object.values(screens).forEach(s => s.classList.remove("active"));
+    screens[screen].classList.add("active");
+
+    appBarTitle.textContent = screen.charAt(0).toUpperCase() + screen.slice(1);
+  });
+});
+
+/* ---------- Clear all data ---------- */
+document.getElementById("btnClearAll").addEventListener("click", () => {
+  if (!confirm("Delete ALL vehicles and expenses from this device?")) return;
+  vehicles = [];
+  expenses = [];
+  selectedVehicle = "";
+  localStorage.removeItem(LS_VEHICLES);
+  localStorage.removeItem(LS_EXPENSES);
+  localStorage.removeItem(LS_SELECTED);
+
+  // add one default vehicle again
+  const v = { id: Date.now(), name: "My Vehicle", reg: "", type: "2W" };
+  vehicles.push(v);
+  selectedVehicle = String(v.id);
+  saveState();
+  refreshVehicleSelect();
+  refreshHistory();
+  refreshReports();
+});
+
+/* ---------- Init ---------- */
+function init() {
+  refreshVehicleSelect();
+  refreshHistory();
+  refreshReports();
+}
+
+document.addEventListener("DOMContentLoaded", init);
 </script>
 
 </body>
